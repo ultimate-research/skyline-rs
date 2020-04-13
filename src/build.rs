@@ -26,6 +26,7 @@ extern fn eh_personality() {}
     ($module_name:expr) => {};
 }
 
+#[cfg(not(feature = "std"))]
 global_asm!(include_str!("mod0.s"));
 
 #[no_mangle] pub unsafe extern "C" fn __custom_init() {}
