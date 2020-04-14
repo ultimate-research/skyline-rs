@@ -1,4 +1,18 @@
+#![feature(concat_idents)]
 use crate::alloc::string::String;
+
+extern "C" {
+    pub fn A64HookFunction(symbol: *const libc::c_void, replace: *const libc::c_void, result: *mut *mut libc::c_void);
+}
+
+#[macro_export] macro_rules! hook_install {
+    ($symbol:ident, $replace:ident) => { 
+        unsafe { hooks::A64HookFunction(
+            $symbol as *const libc::c_void,
+            $replace as *const libc::c_void,
+            &mut concat_idents!(orig_, $replace) as *mut *mut libc::c_void )}
+    }
+}
 
 pub struct HookInfo {
     /// Name of the function being used as the override
