@@ -36,19 +36,6 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
     
     main_function.sig.ident = Ident::new("main", Span::call_site());
 
-    // allow hook!
-    let hook_stmt: Stmt = parse_quote! {
-        macro_rules! hook {
-            ($symbol:ident, $replace:ident) => { 
-                hook(
-                    $symbol as *const libc::c_void,
-                    $replace as *const libc::c_void,
-                    unsafe { &mut concat_idents!(orig_, $replace) as *mut *mut libc::c_void })
-            }
-        }
-    };
-    main_function.block.stmts.insert(0, hook_stmt);
-
     let mut output = TokenStream2::new();
 
     quote!(
