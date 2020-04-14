@@ -1,6 +1,8 @@
+#![feature(concat_idents)]
+
 use quote::{ToTokens, quote};
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, token, Ident, AttrStyle, Lit, spanned::Spanned};
+use syn::{parse_quote, parse_macro_input, token, Ident, AttrStyle, Stmt, Lit, spanned::Spanned};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 
 mod attributes;
@@ -34,6 +36,19 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
     
     main_function.sig.ident = Ident::new("main", Span::call_site());
 
+    // allow hook!
+    let hook_stmt: Stmt = parse_quote! {
+        macro_rules! hook {
+            ($symbol:ident, $replace:ident) => { 
+                hook(
+                    $symbol as *const libc::c_void,
+                    $replace as *const libc::c_void,
+                    unsafe { &mut concat_idents!(orig_, $replace) as *mut *mut libc::c_void })
+            }
+        }
+    };
+    main_function.block.stmts.insert(0, hook_stmt);
+
     let mut output = TokenStream2::new();
 
     quote!(
@@ -62,35 +77,29 @@ pub fn hook(_: TokenStream, input: TokenStream) -> TokenStream {
         name: Some(syn::LitStr::new("C", Span::call_site()))
     });
 
+    let args_tokens = mod_fn.sig.inputs.to_token_stream();
+    let return_tokens = mod_fn.sig.output.to_token_stream();
+
+    let _orig_fn = quote::format_ident!(
+        "orig_{}",
+        mod_fn.sig.ident
+    );
+
+    // allow original!
+    let orig_stmt: Stmt = parse_quote! {
+        macro_rules! original {
+            () => { unsafe { core::mem::transmute::<_, extern "C" fn(#args_tokens) #return_tokens>(#_orig_fn as *const()) } }
+        }
+    };
+    mod_fn.block.stmts.insert(0, orig_stmt);
+
     mod_fn.to_tokens(&mut output);
 
     let mod_fn = mod_fn.sig.ident;
 
-    let _info = quote::format_ident!(
-        "{}_skyline_internal_hook_info",
-        mod_fn
-    );
-
-    let _hook = quote::format_ident!(
-        "{}_skyline_internal_hook",
-        mod_fn
-    );
-
     quote!(
-        /*#[allow(non_upper_case_globals)]
-        static #info: ::skyline::hooks::HookInfo = ::skyline::hooks::HookInfo {
-            name: None,
-            fn_name: stringify!(#mod_fn),
-            offset: None,
-            symbol: None,
-            inline: false
-        };
         #[allow(non_upper_case_globals)]
-        #[link_section = ".rodata.hooks"]
-        static #hook: ::skyline::hooks::Hook = ::skyline::hooks::Hook{
-            ptr: #mod_fn as *const (),
-            info: &#info
-        };*/
+        static mut #_orig_fn: *mut libc::c_void = 0 as *mut libc::c_void;
     ).to_tokens(&mut output);
 
     output.into()
