@@ -24,7 +24,7 @@ pub mod nn;
 #[doc(inline)]
 pub use {
     libc,
-    skyline_macro::{main, hook}, 
+    skyline_macro::{main, hook, install_hook}, 
     hooks::iter_hooks,
 };
 

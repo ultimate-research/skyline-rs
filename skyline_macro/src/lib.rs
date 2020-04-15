@@ -1,11 +1,10 @@
-#![feature(concat_idents)]
-
 use quote::{ToTokens, quote};
 use proc_macro::TokenStream;
 use syn::{parse_quote, parse_macro_input, token, Ident, AttrStyle, Stmt, Lit, spanned::Spanned};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 
 mod attributes;
+mod install_fn;
 
 fn new_attr(attr_name: &str) -> syn::Attribute {
     syn::Attribute {
@@ -21,7 +20,7 @@ fn new_attr(attr_name: &str) -> syn::Attribute {
 pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let mut main_function = parse_macro_input!(item as syn::ItemFn);
 
-    let attr_code = parse_macro_input!(attrs as attributes::Attrs);
+    let attr_code = parse_macro_input!(attrs as attributes::MainAttrs);
 
     // #[no_mangle]
     main_function.attrs.push(
@@ -40,7 +39,6 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
 
     quote!(
         #attr_code
-        //use skyline::prelude::*;
         ::skyline::setup!();
     ).to_tokens(&mut output);
     main_function.to_tokens(&mut output);
@@ -49,8 +47,9 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn hook(_: TokenStream, input: TokenStream) -> TokenStream {
+pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
     let mut mod_fn = parse_macro_input!(input as syn::ItemFn);
+    let attrs = parse_macro_input!(attrs as attributes::HookAttrs);
     let mut output = TokenStream2::new();
 
     // #[no_mangle]
@@ -68,28 +67,49 @@ pub fn hook(_: TokenStream, input: TokenStream) -> TokenStream {
     let return_tokens = mod_fn.sig.output.to_token_stream();
 
     let _orig_fn = quote::format_ident!(
-        "orig_{}",
+        "{}_skyline_internal_original_fn",
         mod_fn.sig.ident
     );
 
     // allow original!
     let orig_stmt: Stmt = parse_quote! {
         macro_rules! original {
-            () => { unsafe { core::mem::transmute::<_, extern "C" fn(#args_tokens) #return_tokens>(#_orig_fn as *const()) } }
+            () => {
+                unsafe {
+                    core::mem::transmute::<_, extern "C" fn(#args_tokens) #return_tokens>(
+                        #_orig_fn as *const()
+                    ) 
+                } 
+            }
         }
     };
     mod_fn.block.stmts.insert(0, orig_stmt);
 
     mod_fn.to_tokens(&mut output);
 
-    let mod_fn = mod_fn.sig.ident;
+    let install_fn = install_fn::generate(&mod_fn.sig.ident, &_orig_fn, &attrs);
 
     quote!(
+        #install_fn
+        
         #[allow(non_upper_case_globals)]
-        static mut #_orig_fn: *mut libc::c_void = 0 as *mut libc::c_void;
+        static mut #_orig_fn: *mut ::skyline::libc::c_void = 0 as *mut ::skyline::libc::c_void;
     ).to_tokens(&mut output);
 
     output.into()
+}
+
+#[proc_macro]
+pub fn install_hook(input: TokenStream) -> TokenStream {
+    let mut path = parse_macro_input!(input as syn::Path);
+
+    let last_seg = path.segments.iter_mut().last().unwrap();
+
+    last_seg.ident = quote::format_ident!("{}_skyline_internal_install_hook", last_seg.ident);
+
+    quote!(
+        #path();
+    ).into()
 }
 
 fn lit_to_bytes(lit: &Lit) -> Option<Vec<u8>> {
