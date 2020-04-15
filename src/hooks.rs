@@ -1,5 +1,9 @@
 use crate::alloc::string::String;
 
+extern "C" {
+    pub fn A64HookFunction(symbol: *const libc::c_void, replace: *const libc::c_void, result: *mut *mut libc::c_void);
+}
+
 pub struct HookInfo {
     /// Name of the function being used as the override
     pub fn_name: &'static str,
