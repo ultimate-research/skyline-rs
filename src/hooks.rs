@@ -1,7 +1,17 @@
 use crate::alloc::string::String;
 
+#[repr(u8)]
+pub enum Region {
+    Text,
+    Rodata,
+    Data,
+    Bss,
+    Heap
+}
+
 extern "C" {
     pub fn A64HookFunction(symbol: *const libc::c_void, replace: *const libc::c_void, result: *mut *mut libc::c_void);
+    pub fn getRegionAddress(region: Region) -> *mut libc::c_void;
 }
 
 pub struct HookInfo {

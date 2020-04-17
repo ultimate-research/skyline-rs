@@ -67,13 +67,13 @@ impl Parse for HookAttrs {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let look = input.lookahead1();
         let attr = if look.peek(kw::symbol) {
-            let MetaItem::<kw::replace, syn::LitStr> { item: string, .. } = input.parse()?;
+            let MetaItem::<kw::symbol, syn::LitStr> { item: string, .. } = input.parse()?;
             
             let mut a = HookAttrs::default();
             a.symbol = Some(string);
             a
         } else if look.peek(kw::offset) {
-            let MetaItem::<kw::replace, syn::LitInt> { item: int, .. } = input.parse()?;
+            let MetaItem::<kw::offset, syn::LitInt> { item: int, .. } = input.parse()?;
             
             let mut a = HookAttrs::default();
             a.offset = Some(int);

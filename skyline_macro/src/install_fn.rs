@@ -8,6 +8,17 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
     let replace = attrs.replace
                     .as_ref()
                     .map(ToTokens::into_token_stream)
+                    .or_else(||{
+                        attrs.offset.as_ref().map(|offset|{
+                            quote! {
+                                unsafe {
+                                    ::skyline::hooks::getRegionAddress(
+                                        ::skyline::hooks::Region::Text
+                                    ) as *mut u8
+                                }.offset(#offset as isize)
+                            }
+                        })
+                    })
                     .unwrap_or_else(||{
                         quote_spanned!(Span::call_site() =>
                             compile_error!("Missing 'replace' item in hook macro");
