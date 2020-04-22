@@ -27,10 +27,14 @@ pub fn log(message: &str) {
 }
 
 /**  
-    For dumping a struct to 8 bytes per row
+    Format wrapper used for displaying a [`Sized`] type to hex with 8 byte rows
+
     Example usage:
-    let val = SomeStruct::new();
+    ```rust
+    # use skyline::logging::HexDump;
+    let val: u32 = 3;
     println!("Hexdump:\n {}", HexDump(&val));
+    ```
 */
 pub struct HexDump<'a, T: Sized>(pub &'a T);
 
