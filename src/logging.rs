@@ -1,5 +1,6 @@
 use core::fmt::Display;
 use core::fmt;
+use crate::libc::{c_char, strlen};
 
 extern "C" {
     fn skyline_tcp_send_raw(bytes: *const u8, usize: u64);
@@ -46,6 +47,21 @@ impl<'a, T> Display for HexDump<'a, T> {
 
 pub fn hex_dump_ptr<T>(ptr: *const T) {
     println!("{}", HexDump(unsafe { &*(ptr as *const u8) }))
+}
+
+pub fn hex_dump_str(ptr: *const c_char) {
+    let len = unsafe { strlen(ptr) };
+    let addr = ptr as usize;
+
+    println!("{}", StrDumper(ptr, addr..addr + len));
+}
+
+struct StrDumper(pub *const c_char, core::ops::Range<usize>);
+
+impl fmt::Display for StrDumper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        hex_dump(f, self.0, Some(self.1.clone()))
+    }
 }
 
 const CHUNK_SIZE: usize = 0x10;
