@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(incomplete_features)]
-#![feature(alloc_error_handler, lang_items, start, global_asm, const_generics, impl_trait_in_bindings, proc_macro_hygiene, alloc_prelude, panic_info_message)]
+#![feature(alloc_error_handler, lang_items, start, global_asm, const_generics, impl_trait_in_bindings, proc_macro_hygiene, alloc_prelude, panic_info_message, try_trait, track_caller)]
 
 /// The rust core allocation and collections library
 pub extern crate alloc;
@@ -10,7 +10,15 @@ pub use skyline_macro;
 
 /// Types and functions for working with hooking
 pub mod hooks;
+
+/// Types and functions for logging and debugging
 pub mod logging;
+
+/// Functions for helping patch executables
+pub mod patching;
+
+/// Types and helpers related to error-handling
+pub mod error;
 
 #[doc(hidden)]
 pub mod extern_alloc;
@@ -26,6 +34,7 @@ pub use {
     libc,
     skyline_macro::{main, hook, install_hook, from_offset}, 
     hooks::iter_hooks,
+    error::{Error, ErrorKind},
 };
 
 /// Helper to convert a str to a *const u8 (to be replaced)
