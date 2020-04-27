@@ -49,9 +49,9 @@ pub fn c_str(string: &str) -> *const u8 {
 pub unsafe fn from_c_str(c_str: *const u8) -> String {
     let name_slice = Vec::from_raw_parts(c_str as *mut _, strlen(c_str), strlen(c_str));
     match core::str::from_utf8(&name_slice) {
-        Ok(v) => return v.to_owned(),
+        Ok(v) => v.to_owned(),
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-    };
+    }
 }
 
 /// A set of items that will likely be useful to import anyway
