@@ -2,6 +2,8 @@
 #![allow(incomplete_features)]
 #![feature(alloc_error_handler, lang_items, start, global_asm, const_generics, impl_trait_in_bindings, proc_macro_hygiene, alloc_prelude, panic_info_message, try_trait, track_caller)]
 
+use libc::strlen;
+
 /// The rust core allocation and collections library
 pub extern crate alloc;
 
@@ -40,6 +42,16 @@ pub use {
 /// Helper to convert a str to a *const u8 (to be replaced)
 pub fn c_str(string: &str) -> *const u8 {
     string.as_bytes().as_ptr()
+}
+
+
+/// Helper to convert a C-str to a Rust string
+pub unsafe fn from_c_str(c_str: *const u8) -> String {
+    let name_slice = Vec::from_raw_parts(c_str as *mut _, strlen(c_str), strlen(c_str));
+    match core::str::from_utf8(&name_slice) {
+        Ok(v) => v.to_owned(),
+        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+    }
 }
 
 /// A set of items that will likely be useful to import anyway
