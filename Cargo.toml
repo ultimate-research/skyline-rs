@@ -14,3 +14,4 @@ libc = { git = "https://github.com/ultimate-research/libc-nnsdk.git" }
 [features]
 default = ["std"]
 std = []
+nro_internal = []

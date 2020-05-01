@@ -22,6 +22,9 @@ pub mod patching;
 /// Types and helpers related to error-handling
 pub mod error;
 
+/// Types and functions needed to handle NRO hooking
+pub mod nro;
+
 #[doc(hidden)]
 pub mod extern_alloc;
 
