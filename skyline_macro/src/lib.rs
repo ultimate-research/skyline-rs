@@ -94,7 +94,7 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
         #install_fn
         
         #[allow(non_upper_case_globals)]
-        static mut #_orig_fn: *mut ::skyline::libc::c_void = 0 as *mut ::skyline::libc::c_void;
+        pub static mut #_orig_fn: *mut ::skyline::libc::c_void = 0 as *mut ::skyline::libc::c_void;
     ).to_tokens(&mut output);
 
     output.into()
