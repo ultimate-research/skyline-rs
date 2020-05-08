@@ -164,7 +164,7 @@ pub fn from_offset(attr: TokenStream, input: TokenStream) -> TokenStream {
             let inner = core::mem::transmute::<_,#inner_fn_type>(
                 unsafe {::skyline::hooks::getRegionAddress(
                     ::skyline::hooks::Region::Text
-                )}.offset(#offset as isize)
+                ) as *const u8}.offset(#offset as isize)
             );
             inner(
                 #args
