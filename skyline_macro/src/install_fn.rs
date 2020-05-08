@@ -26,7 +26,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
                     });
 
     quote!{
-        fn #_install_fn() {
+        pub fn #_install_fn() {
             if (::skyline::hooks::A64HookFunction as *const ()).is_null() {
                 panic!("A64HookFunction is null");
             }
