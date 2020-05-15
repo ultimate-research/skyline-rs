@@ -1,5 +1,20 @@
 use crate::alloc::string::String;
 
+#[macro_export] macro_rules! install_hooks {
+    (
+        $(
+            $hook_paths:path
+        ),*
+        $(,)?
+    ) => {
+        $(
+            $crate::install_hook!(
+                $hook_paths
+            );
+        )*
+    };
+}
+
 #[repr(u8)]
 pub enum Region {
     Text,
