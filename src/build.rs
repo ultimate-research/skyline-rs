@@ -29,9 +29,6 @@ extern fn eh_personality() {}
 #[cfg(not(feature = "std"))]
 global_asm!(include_str!("mod0.s"));
 
-#[no_mangle] pub unsafe extern "C" fn __custom_init() {}
-#[no_mangle] pub extern "C" fn __custom_fini() {}
-
 #[macro_export] macro_rules! set_module_name {
     ($lit:literal) => {
         ::skyline::install_panic_handler!($lit);
@@ -70,10 +67,16 @@ impl<const LEN: usize> ModuleName<LEN> {
     () => {
         #[global_allocator]
         pub static ALLOCATOR: $crate::extern_alloc::Allocator = $crate::extern_alloc::Allocator;
+
+        #[no_mangle] pub unsafe extern "C" fn __custom_init() {}
+        #[no_mangle] pub extern "C" fn __custom_fini() {}
     };
 }
 
 #[cfg(feature = "std")]
 #[macro_export] macro_rules! setup {
-    () => {};
+    () => {
+        #[no_mangle] pub unsafe extern "C" fn __custom_init() {}
+        #[no_mangle] pub extern "C" fn __custom_fini() {}
+    };
 }
