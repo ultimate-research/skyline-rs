@@ -40,11 +40,30 @@ pub unsafe fn patch_data_from_text<T: Sized + Copy>(text_offset: *const u8, offs
     Ok(())
 }
 
-pub enum BranchType {
+enum BranchType {
     Branch,
     BranchLink
 }
 
+/// A builder type to help when replacing branches in games
+///
+/// Example:
+///
+/// ```rust
+/// // Replace the instruction at `main` + 0x14a8504 with a branch
+/// // to `main` + 0x14a853C
+/// BranchBuilder::branch()
+///     .branch_offset(0x14a8504)
+///     .branch_to_offset(0x14a853C)
+///     .replace()
+///
+/// // Replace the instruction at `main` + 0x14a8504 with a branch
+/// // to `replacement_function`
+/// BranchBuilder::branch()
+///     .branch_offset(0x14a8504)
+///     .branch_to_ptr(replacement_function as *const ())
+///     .replace()
+/// ```
 pub struct BranchBuilder {
     branch_type: BranchType,
     offset: Option<usize>,
