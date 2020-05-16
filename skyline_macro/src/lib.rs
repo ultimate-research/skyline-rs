@@ -76,11 +76,19 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
     let orig_stmt: Stmt = parse_quote! {
         macro_rules! original {
             () => {
-                unsafe {
-                    core::mem::transmute::<_, extern "C" fn(#args_tokens) #return_tokens>(
-                        #_orig_fn as *const()
-                    ) 
-                } 
+                {
+                    // Hacky solution to allow `unused_unsafe` to be applied to an expression
+                    #[allow(unused_unsafe)]
+                    if true {
+                        unsafe {
+                            core::mem::transmute::<_, extern "C" fn(#args_tokens) #return_tokens>(
+                                #_orig_fn as *const()
+                            ) 
+                        } 
+                    } else {
+                        unreachable!()
+                    }
+                }
             }
         }
     };
