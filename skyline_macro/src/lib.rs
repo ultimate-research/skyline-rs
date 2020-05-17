@@ -217,3 +217,110 @@ pub fn to_null_term_bytes(input: TokenStream) -> TokenStream {
         }
     }
 }
+
+fn sig_to_token_func_call(sig: &syn::Signature) -> (Ident, TokenStream2) {
+    let ident = quote::format_ident!("__{}_internal_unchecked", sig.ident);
+    let args: Vec<_> =
+        sig.inputs
+            .iter()
+            .map(|fn_arg|{
+                if let syn::FnArg::Typed(pat) = fn_arg {
+                    pat.pat.to_token_stream()
+                } else {
+                    todo!()
+                }
+            })
+            .collect();
+
+    (
+        ident.clone(),
+        quote!(
+            #ident(
+                #(
+                    #args
+                ),*
+            )
+        )
+    )
+}
+
+/// Add a null check to dynamically linked functions. Applied at the extern block level.
+///
+/// Example:
+///
+/// ```rust
+/// #[null_check]
+/// extern "C" {
+///     fn not_an_available_import() -> u64;
+/// }
+/// ```
+///
+/// Then, if `not_an_available_import` is not available it will panic with the following message:
+///
+/// ```text
+/// thread '<unnamed>' panicked at 'not_an_available_import is null (likely unlinked)', src/lib.rs:5:1
+/// ```
+///
+/// # Note
+///
+/// Due to a bug, this may not consistently panic on release builds, use `--debug` for install/run
+/// commands to ensure this does not happen when testing.
+#[proc_macro_attribute]
+pub fn null_check(_attrs: TokenStream, input: TokenStream) -> TokenStream {
+    let mut extern_block = parse_macro_input!(input as syn::ItemForeignMod);
+
+    let (vis, sigs): (Vec<_>, Vec<_>) =
+        extern_block
+            .items
+            .iter_mut()
+            .filter_map(|item|{
+                if let syn::ForeignItem::Fn(ref mut func) = item {
+                    let has_link_name = func.attrs.iter().any(|attr|{
+                        if let Some(ident) = attr.path.get_ident() {
+                            ident.to_string() == "link_name"
+                        } else {
+                            false
+                        }
+                    });
+
+                    if !has_link_name {
+                        let name = func.sig.ident.to_string();
+
+                        let attr: syn::Attribute = parse_quote!(
+                            #[link_name = #name]
+                        );
+
+                        func.attrs.push(attr);
+                    }
+
+                    let old_sig = func.sig.clone();
+
+                    func.sig.ident = quote::format_ident!("__{}_internal_unchecked", func.sig.ident);
+
+                    Some((func.vis.clone(), old_sig))
+                } else {
+                    None
+                }
+            })
+            .unzip();
+
+    let (idents, func_calls): (Vec<_>, Vec<_>) = sigs.iter().map(sig_to_token_func_call).unzip();
+
+    quote!(
+        #(
+            #vis unsafe #sigs {
+                //panic!(concat!(stringify!(#idents), " is 0x{:X}"), (#idents as u64));
+                
+                println!("ptr is 0x{:X}", #idents as u64);
+
+                if (#idents as u64 as *const ()).is_null() {
+                    return panic!(concat!(stringify!(#idents), " is null (likely unlinked)"));
+                }
+
+                #func_calls
+            }
+        )*
+
+        #extern_block
+    ).into()
+}
