@@ -91,6 +91,11 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
                 }
             }
         }
+        macro_rules! call_original {
+            ($($argument:expr), *) => {
+                original!()(($($argument:expr), *))
+            }
+        }
     };
     mod_fn.block.stmts.insert(0, orig_stmt);
 
