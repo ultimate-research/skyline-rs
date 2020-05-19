@@ -93,7 +93,7 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
         }
         macro_rules! call_original {
             ($($argument:expr), *) => {
-                original!()(($($argument:expr), *))
+                original!()($($argument:expr), *)
             }
         }
     };
