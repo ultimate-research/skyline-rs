@@ -46,7 +46,7 @@ impl ToTokens for MainAttrs {
 pub struct HookAttrs {
     pub replace: Option<syn::Path>,
     pub symbol: Option<syn::LitStr>,
-    pub offset: Option<syn::LitInt>
+    pub offset: Option<syn::Expr>
 }
 
 fn merge(attr1: HookAttrs, attr2: HookAttrs) -> HookAttrs {
@@ -73,10 +73,10 @@ impl Parse for HookAttrs {
             a.symbol = Some(string);
             a
         } else if look.peek(kw::offset) {
-            let MetaItem::<kw::offset, syn::LitInt> { item: int, .. } = input.parse()?;
+            let MetaItem::<kw::offset, syn::Expr> { item: offset, .. } = input.parse()?;
             
             let mut a = HookAttrs::default();
-            a.offset = Some(int);
+            a.offset = Some(offset);
             a
         } else if look.peek(kw::replace) {
             let MetaItem::<kw::replace, syn::Path> { item: replace, .. } = input.parse()?;
