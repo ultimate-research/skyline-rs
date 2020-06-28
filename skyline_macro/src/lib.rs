@@ -152,7 +152,7 @@ fn get_arg_pats(args: &Punctuated<FnArg, Comma>) -> Punctuated<syn::Pat, Comma> 
 #[proc_macro_attribute]
 pub fn from_offset(attr: TokenStream, input: TokenStream) -> TokenStream {
     let mut fn_sig = parse_macro_input!(input as syn::ForeignItemFn);
-    let offset = parse_macro_input!(attr as syn::LitInt);
+    let offset = parse_macro_input!(attr as syn::Expr);
 
     let mut inner_fn_type: syn::TypeBareFn = parse_quote!( extern "C" fn() );
 
