@@ -47,6 +47,20 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
     output.into()
 }
 
+fn remove_mut(arg: &syn::FnArg) -> syn::FnArg {
+    let mut arg = arg.clone();
+
+    if let syn::FnArg::Typed(ref mut arg) = arg {
+        if let syn::Pat::Ident(ref mut arg) = *arg.pat {
+            arg.by_ref = None;
+            arg.mutability = None;
+            arg.subpat = None;
+        }
+    }
+
+    arg
+}
+
 #[proc_macro_attribute]
 pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
     let mut mod_fn = parse_macro_input!(input as syn::ItemFn);
@@ -64,7 +78,7 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
         name: Some(syn::LitStr::new("C", Span::call_site()))
     });
 
-    let args_tokens = mod_fn.sig.inputs.to_token_stream();
+    let args_tokens = mod_fn.sig.inputs.iter().map(remove_mut);
     let return_tokens = mod_fn.sig.output.to_token_stream();
 
     let _orig_fn = quote::format_ident!(
@@ -81,7 +95,7 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
                     #[allow(unused_unsafe)]
                     if true {
                         unsafe {
-                            core::mem::transmute::<_, extern "C" fn(#args_tokens) #return_tokens>(
+                            core::mem::transmute::<_, extern "C" fn(#(#args_tokens),*) #return_tokens>(
                                 #_orig_fn as *const()
                             ) 
                         } 
@@ -93,6 +107,14 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
         }
     };
     mod_fn.block.stmts.insert(0, orig_stmt);
+    let orig_stmt: Stmt = parse_quote! {
+        macro_rules! call_original {
+            ($($args:expr),* $(,)?) => {
+                original!()($($args),*)
+            }
+        }
+    };
+    mod_fn.block.stmts.insert(1, orig_stmt);
 
     mod_fn.to_tokens(&mut output);
 
