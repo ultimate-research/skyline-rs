@@ -1,4 +1,4 @@
-use std::fmt;
+use core::fmt;
 use crate::nn::ro;
 
 pub type Callback = extern "Rust" fn(&NroInfo);

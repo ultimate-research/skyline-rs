@@ -4,6 +4,9 @@
 
 use libc::strlen;
 
+#[cfg(not(feature = "std"))]
+use alloc::{borrow::ToOwned, string::String};
+
 /// The rust core allocation and collections library
 pub extern crate alloc;
 

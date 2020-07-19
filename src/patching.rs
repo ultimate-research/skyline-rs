@@ -2,6 +2,9 @@ use crate::libc::{c_void, size_t, strlen};
 use crate::error::{SwitchResult, Error, ErrorKind};
 use crate::hooks::{Region, getRegionAddress};
 
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
 extern "C" {
     pub fn sky_memcpy(dst: *const c_void, src: *const c_void, size: size_t) -> SwitchResult;
 }

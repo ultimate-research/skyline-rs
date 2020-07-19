@@ -69,8 +69,36 @@ const NUMBERING_HEX: &str = "00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F ";
 const NUMBERING_SEP: &str = "│";
 const NUMBERING_ASCII: &str = " 0123456789ABCDEF";
 
+#[cfg(not(feature = "std"))]
+const LOG2_TAB: [usize; 64] = [
+    63,  0, 58,  1, 59, 47, 53,  2,
+    60, 39, 48, 27, 54, 33, 42,  3,
+    61, 51, 37, 40, 49, 18, 28, 20,
+    55, 30, 34, 11, 43, 14, 22,  4,
+    62, 57, 46, 52, 38, 26, 32, 41,
+    50, 36, 17, 19, 29, 10, 13, 21,
+    56, 45, 25, 31, 35, 16,  9, 12,
+    44, 24, 15,  8, 23,  7,  6,  5
+];
+
+#[cfg(not(feature = "std"))]
+fn log2 (mut value: usize) -> f64 {
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    value |= value >> 32;
+    LOG2_TAB[((value - (value >> 1)) * 0x07EDD5E59A4E28C2) >> 58] as f64
+}
+
+#[cfg(feature = "std")]
+fn log2 (value: usize) -> f64 {
+    (value as f64).log2()
+}
+
 fn hex_num_len(val: usize) -> usize {
-    ((val as f64).log2() / (0x10 as f64).log2()) as usize + 1
+    (log2(val) / log2(0x10)) as usize + 1
 }
 
 fn to_ascii_dots(x: u8) -> char {
