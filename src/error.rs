@@ -81,11 +81,11 @@ pub fn show_error(code: u32, message: &str, details: &str) {
     let mut message_bytes = String::from(message).into_bytes();
     let mut details_bytes = String::from(details).into_bytes();
 
-    if message_bytes.len() > 2048 {
+    if message_bytes.len() >= 2048 {
         message_bytes.truncate(2044);
         message_bytes.append(&mut String::from("...\0").into_bytes());
     }
-    if details_bytes.len() > 2048 {
+    if details_bytes.len() >= 2048 {
         details_bytes.truncate(2044);
         details_bytes.append(&mut String::from("...\0").into_bytes());
     }
