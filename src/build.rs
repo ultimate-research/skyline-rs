@@ -34,6 +34,7 @@ global_asm!(include_str!("mod0.s"));
         ::skyline::install_panic_handler!($lit);
 
         const __SKYLINE_INTERNAL_MODULE_LEN: usize = $lit.len() + 1;
+        #[no_mangle]
         #[link_section = ".rodata.module_name"]
         pub static __MODULE_NAME: ::skyline::build::ModuleName<__SKYLINE_INTERNAL_MODULE_LEN> =
             ::skyline::build::ModuleName::new(
