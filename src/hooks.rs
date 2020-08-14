@@ -1,4 +1,5 @@
 use crate::alloc::string::String;
+use nnsdk::root::nn;
 
 #[macro_export] macro_rules! install_hooks {
     (
@@ -24,8 +25,14 @@ pub enum Region {
     Heap
 }
 
+#[repr(C)]
+pub struct InlineCtx {
+    pub registers: [nn::os::CpuRegister; 29],
+}
+
 extern "C" {
     pub fn A64HookFunction(symbol: *const libc::c_void, replace: *const libc::c_void, result: *mut *mut libc::c_void);
+    pub fn A64InlineHook(symbol: *const libc::c_void, replace: *const libc::c_void);
     pub fn getRegionAddress(region: Region) -> *mut libc::c_void;
 }
 
