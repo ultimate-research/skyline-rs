@@ -1,4 +1,6 @@
 use crate::alloc::string::String;
+use nnsdk::root::nn;
+use std::fmt;
 
 #[macro_export] macro_rules! install_hooks {
     (
@@ -24,8 +26,23 @@ pub enum Region {
     Heap
 }
 
+#[repr(C)]
+pub struct InlineCtx {
+    pub registers: [nn::os::CpuRegister; 29],
+}
+
+impl fmt::Display for InlineCtx {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (i, reg) in self.registers.iter().enumerate() {
+            unsafe { write!(f, "X[{}]: {:#08x?}\n", i, reg.x.as_ref())?; }
+        }
+        Ok(())
+    }
+}
+
 extern "C" {
     pub fn A64HookFunction(symbol: *const libc::c_void, replace: *const libc::c_void, result: *mut *mut libc::c_void);
+    pub fn A64InlineHook(symbol: *const libc::c_void, replace: *const libc::c_void);
     pub fn getRegionAddress(region: Region) -> *mut libc::c_void;
 }
 
