@@ -87,7 +87,7 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
     );
 
     // allow original!
-    if attrs.inline {
+    if !attrs.inline {
         let orig_stmt: Stmt = parse_quote! {
             macro_rules! original {
                 () => {
