@@ -87,45 +87,51 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
     );
 
     // allow original!
-    let orig_stmt: Stmt = parse_quote! {
-        macro_rules! original {
-            () => {
-                {
-                    // Hacky solution to allow `unused_unsafe` to be applied to an expression
-                    #[allow(unused_unsafe)]
-                    if true {
-                        unsafe {
-                            core::mem::transmute::<_, extern "C" fn(#(#args_tokens),*) #return_tokens>(
-                                #_orig_fn as *const()
-                            ) 
-                        } 
-                    } else {
-                        unreachable!()
+    if attrs.inline {
+        let orig_stmt: Stmt = parse_quote! {
+            macro_rules! original {
+                () => {
+                    {
+                        // Hacky solution to allow `unused_unsafe` to be applied to an expression
+                        #[allow(unused_unsafe)]
+                        if true {
+                            unsafe {
+                                core::mem::transmute::<_, extern "C" fn(#(#args_tokens),*) #return_tokens>(
+                                    #_orig_fn as *const()
+                                ) 
+                            } 
+                        } else {
+                            unreachable!()
+                        }
                     }
                 }
             }
-        }
-    };
-    mod_fn.block.stmts.insert(0, orig_stmt);
-    let orig_stmt: Stmt = parse_quote! {
-        macro_rules! call_original {
-            ($($args:expr),* $(,)?) => {
-                original!()($($args),*)
+        };
+        mod_fn.block.stmts.insert(0, orig_stmt);
+        let orig_stmt: Stmt = parse_quote! {
+            macro_rules! call_original {
+                ($($args:expr),* $(,)?) => {
+                    original!()($($args),*)
+                }
             }
-        }
-    };
-    mod_fn.block.stmts.insert(1, orig_stmt);
+        };
+        mod_fn.block.stmts.insert(1, orig_stmt);
+    }
 
     mod_fn.to_tokens(&mut output);
 
     let install_fn = install_fn::generate(&mod_fn.sig.ident, &_orig_fn, &attrs);
 
-    quote!(
-        #install_fn
-        
-        #[allow(non_upper_case_globals)]
-        pub static mut #_orig_fn: *mut ::skyline::libc::c_void = 0 as *mut ::skyline::libc::c_void;
-    ).to_tokens(&mut output);
+    if attrs.inline {
+        install_fn.to_tokens(&mut output);
+    } else {
+        quote!(
+            #install_fn
+            
+            #[allow(non_upper_case_globals)]
+            pub static mut #_orig_fn: *mut ::skyline::libc::c_void = 0 as *mut ::skyline::libc::c_void;
+        ).to_tokens(&mut output);
+    }
 
     output.into()
 }

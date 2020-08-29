@@ -8,6 +8,7 @@ pub struct MainAttrs {
 }
 
 mod kw {
+    syn::custom_keyword!(inline);
     syn::custom_keyword!(name);
     syn::custom_keyword!(replace);
     syn::custom_keyword!(symbol);
@@ -42,24 +43,26 @@ impl ToTokens for MainAttrs {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct HookAttrs {
     pub replace: Option<syn::Path>,
     pub symbol: Option<syn::LitStr>,
-    pub offset: Option<syn::Expr>
+    pub offset: Option<syn::Expr>,
+    pub inline: bool,
 }
 
 fn merge(attr1: HookAttrs, attr2: HookAttrs) -> HookAttrs {
     let (
-        HookAttrs { replace: r1, symbol: s1, offset: o1},
-        HookAttrs { replace: r2, symbol: s2, offset: o2},
+        HookAttrs { replace: r1, symbol: s1, offset: o1, inline: i1 },
+        HookAttrs { replace: r2, symbol: s2, offset: o2, inline: i2 },
     ) = (attr1, attr2);
 
 
     HookAttrs {
         replace: r1.or(r2),
         offset: o1.or(o2),
-        symbol: s1.or(s2)
+        symbol: s1.or(s2),
+        inline: i1 || i2
     }
 }
 
@@ -83,6 +86,11 @@ impl Parse for HookAttrs {
             
             let mut a = HookAttrs::default();
             a.replace = Some(replace);
+            a
+        } else if look.peek(kw::inline) {
+            let _: kw::inline = input.parse()?;
+            let mut a = HookAttrs::default();
+            a.inline = true;
             a
         } else {
             return Err(look.error());

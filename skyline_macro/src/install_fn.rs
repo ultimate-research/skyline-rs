@@ -25,18 +25,35 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
                         )
                     });
 
-    quote!{
-        pub fn #_install_fn() {
-            if (::skyline::hooks::A64HookFunction as *const ()).is_null() {
-                panic!("A64HookFunction is null");
-            }
+    if attrs.inline {
+        quote!{
+            pub fn #_install_fn() {
+                if (::skyline::hooks::A64InlineHook as *const ()).is_null() {
+                    panic!("A64InlineHook is null");
+                }
 
-            unsafe {
-                ::skyline::hooks::A64HookFunction(
-                    #replace as *const ::skyline::libc::c_void,
-                    #name as *const ::skyline::libc::c_void,
-                    &mut #orig as *mut *mut ::skyline::libc::c_void 
-                )
+                unsafe {
+                    ::skyline::hooks::A64InlineHook(
+                        #replace as *const ::skyline::libc::c_void,
+                        #name as *const ::skyline::libc::c_void,
+                    )
+                }
+            }
+        }
+    } else {
+        quote!{
+            pub fn #_install_fn() {
+                if (::skyline::hooks::A64HookFunction as *const ()).is_null() {
+                    panic!("A64HookFunction is null");
+                }
+
+                unsafe {
+                    ::skyline::hooks::A64HookFunction(
+                        #replace as *const ::skyline::libc::c_void,
+                        #name as *const ::skyline::libc::c_void,
+                        &mut #orig as *mut *mut ::skyline::libc::c_void 
+                    )
+                }
             }
         }
     }
