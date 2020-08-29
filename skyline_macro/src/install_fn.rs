@@ -27,6 +27,11 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
 
     if attrs.inline {
         quote!{
+            const _: fn() = ||{
+                fn assert_inline_ctx(_: unsafe extern "C" fn(&::skyline::hooks::InlineCtx)) {}
+
+                assert_inline_ctx(#name);
+            };
             pub fn #_install_fn() {
                 if (::skyline::hooks::A64InlineHook as *const ()).is_null() {
                     panic!("A64InlineHook is null");
