@@ -1,6 +1,6 @@
 use quote::{ToTokens, quote};
 use proc_macro::TokenStream;
-use syn::{parse_quote, parse_macro_input, token, Ident, AttrStyle, Stmt, Lit, spanned::Spanned};
+use syn::{parse_quote, parse_macro_input, token, Ident, AttrStyle, Stmt, Lit};
 use syn::{punctuated::Punctuated, FnArg, BareFnArg, token::Comma};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 

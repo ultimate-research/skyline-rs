@@ -3,13 +3,15 @@ name = "skyline"
 version = "0.1.0"
 authors = ["jam1garner <jam1.mcleod@hotmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+repository = "https://github.com/ultimate-research/skyline-rs"
+description = "A library for helping patch and modify Nintendo Switch games"
+readme = "README.md"
 
 [dependencies]
-skyline_macro = { path = "./skyline_macro" }
-nnsdk = { git = "https://github.com/ultimate-research/nnsdk-rs.git" }
-libc = { git = "https://github.com/ultimate-research/libc-nnsdk.git" }
+skyline_macro = { version = "0.1", path = "./skyline_macro" }
+nnsdk = "0.1"
+libc-nnsdk = "0.0.1"
 
 [features]
 default = ["std"]
