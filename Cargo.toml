@@ -9,9 +9,9 @@ description = "A library for helping patch and modify Nintendo Switch games"
 readme = "README.md"
 
 [dependencies]
-skyline_macro = { version = "0.1", path = "./skyline_macro" }
-nnsdk = "0.1"
-libc-nnsdk = "0.0.1"
+skyline_macro = { path = "./skyline_macro" }
+nnsdk = { git = "https://github.com/ultimate-research/nnsdk-rs.git" }
+libc-nnsdk = { git = "https://github.com/ultimate-research/libc-nnsdk.git" }
 
 [features]
 default = ["std"]
