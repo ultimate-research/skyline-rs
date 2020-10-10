@@ -28,7 +28,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
     if attrs.inline {
         quote!{
             const _: fn() = ||{
-                fn assert_inline_ctx(_: unsafe extern "C" fn(&::skyline::hooks::InlineCtx)) {}
+                fn assert_inline_ctx(_: unsafe extern "C" fn(&mut ::skyline::hooks::InlineCtx)) {}
 
                 assert_inline_ctx(#name);
             };
