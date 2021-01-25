@@ -10,6 +10,7 @@ pub struct NroHookPluginMissing;
 #[allow(improper_ctypes)]
 extern "C" {
     fn add_nro_load_hook(callback: Callback);
+    fn add_nro_unload_hook(callback: Callback);
 }
 
 /// A function to allow adding a hook for immediately after an NRO has been loaded.
@@ -25,6 +26,17 @@ pub fn add_hook(callback: Callback) -> Result<(), NroHookPluginMissing> {
         Ok(())
     }
 
+}
+
+pub fn add_unload_hook(callback: Callback) -> Result<(), NroHookPluginMissing> {
+    if (add_nro_unload_hook as *const ()).is_null() {
+        Err(NroHookPluginMissing)
+    } else {
+        unsafe {
+            add_nro_unload_hook(callback);
+        }
+        Ok(())
+    }
 }
 
 /// A struct to hold information related to the NRO being loaded
