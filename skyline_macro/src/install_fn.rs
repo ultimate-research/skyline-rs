@@ -15,7 +15,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
                                     ::skyline::hooks::getRegionAddress(
                                         ::skyline::hooks::Region::Text
                                     ) as *mut u8
-                                }.offset(#offset as isize)
+                                }.add(#offset)
                             }
                         })
                     })
