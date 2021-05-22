@@ -38,10 +38,19 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
 
     let mut output = TokenStream2::new();
 
-    quote!(
-        #attr_code
-        ::skyline::setup!();
-    ).to_tokens(&mut output);
+    if cfg!(nro_header) {
+        quote!(
+            #attr_code
+            ::skyline::setup!();
+            ::std::nro_header!();
+        ).to_tokens(&mut output);
+    } else {
+        quote!(
+            #attr_code
+            ::skyline::setup!();
+        ).to_tokens(&mut output);
+    }
+
     main_function.to_tokens(&mut output);
 
     output.into()
