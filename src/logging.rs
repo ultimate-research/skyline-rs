@@ -194,7 +194,7 @@ fn hex_dump_value<T: Sized>(f: &mut fmt::Formatter, val: &T) -> fmt::Result {
     hex_dump(f, val as *const _, Some(addr..addr + size))
 }
 
-pub fn stack_trace() {
+pub fn print_stack_trace() {
     let addresses = &mut [0 as *const u8;32];
     let addr_count = unsafe { GetBacktrace(addresses.as_mut_ptr(), 32) };
 
