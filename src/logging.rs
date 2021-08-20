@@ -1,6 +1,16 @@
 use core::fmt::Display;
 use core::fmt;
-use crate::libc::{c_char, strlen};
+use std::ffi::CStr;
+use crate::libc::{c_char, strlen, free};
+use crate::hooks::{ getRegionAddress, Region };
+use nnsdk::{
+    root::cxa_demangle,
+    ro::LookupSymbol,
+    diag::{
+        GetBacktrace,
+        GetSymbolName,
+    },
+};
 
 extern "C" {
     fn skyline_tcp_send_raw(bytes: *const u8, usize: u64);
@@ -182,4 +192,36 @@ fn hex_dump_value<T: Sized>(f: &mut fmt::Formatter, val: &T) -> fmt::Result {
     let addr = val as *const T as usize;
     let size = core::mem::size_of::<T>();
     hex_dump(f, val as *const _, Some(addr..addr + size))
+}
+
+pub fn print_stack_trace() {
+    let addresses = &mut [0 as *const u8;32];
+    let addr_count = unsafe { GetBacktrace(addresses.as_mut_ptr(), 32) };
+
+    for (idx, &addr) in addresses[0..addr_count].iter().enumerate() {
+        if addr.is_null() {
+            continue;
+        }
+
+        let name = &mut [0u8;255];
+        
+        unsafe { GetSymbolName(name.as_mut_ptr(), name.len() as u64, addr as u64) };
+
+        let mut symbol_addr = 0;
+        unsafe { LookupSymbol(&mut symbol_addr, name.as_ptr()) };
+
+        let mut result = 0;
+        let demangled_symbol = unsafe { cxa_demangle(name.as_ptr(), 0 as _, 0 as _, &mut result) };
+
+        let c_name;
+
+        if result == 0 {
+            c_name = unsafe { CStr::from_ptr(demangled_symbol as _).to_str().unwrap_or("None") };
+        } else {
+            c_name = unsafe { CStr::from_ptr(name.as_ptr() as _).to_str().unwrap_or("None") };
+        }
+
+        println!("[{}] Address: {:x}, Symbol: {}+{:x}\n", idx, (symbol_addr as u64 - unsafe { getRegionAddress(Region::Text) as u64 } + 0x7100000000), c_name, addr as u64 - symbol_addr as u64);
+        unsafe { free(demangled_symbol as _) };
+    }
 }
