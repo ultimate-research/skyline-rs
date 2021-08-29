@@ -23,18 +23,21 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
 
     let attr_code = parse_macro_input!(attrs as attributes::MainAttrs);
 
-    // #[no_mangle]
-    main_function.attrs.push(
-        new_attr("no_mangle")
-    );
+    if cfg!(feature = "nso") {
+        main_function.attrs.push(
+            syn::parse_quote!( #[export_name = "nnMain"] )
+        );
+    } else {
+        main_function.attrs.push(
+            syn::parse_quote!( #[export_name = "main"] )
+        )
+    }
     
     // extern "C"
     main_function.sig.abi = Some(syn::Abi {
         extern_token: syn::token::Extern { span: Span::call_site() },
         name: Some(syn::LitStr::new("C", Span::call_site()))
     });
-    
-    main_function.sig.ident = Ident::new("main", Span::call_site());
 
     let mut output = TokenStream2::new();
 
