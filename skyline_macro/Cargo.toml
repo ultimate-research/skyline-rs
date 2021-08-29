@@ -14,3 +14,6 @@ syn = { version = "1", features = ["full", "extra-traits"] }
 quote = "1"
 proc-macro2 = "1"
 lazy_static = "1.4"
+
+[features]
+nso = []
