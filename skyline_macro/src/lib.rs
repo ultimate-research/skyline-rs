@@ -54,9 +54,29 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
         ).to_tokens(&mut output);
     }
 
-    main_function.to_tokens(&mut output);
+    quote!(
+        // this is both fine and normal and don't think too hard about it
+        const _: fn() = || {
+            use ::skyline::libc::{pthread_mutex_t, c_int};
 
-    output.into()
+            // re-export pthread_mutex_lock as __pthread_mutex_lock
+            //
+            // this is done in order to fix the fact that switch libstd depends on libc-nnsdk
+            // which itself links against symbol aliases only present in certain versions of 
+            // nnsdk.
+            #[export_name = "__pthread_mutex_lock"]
+            pub unsafe extern "C" fn _skyline_internal_pthread_mutex_lock_shim(lock: *mut pthread_mutex_t) -> c_int {
+                extern "C" {
+                    fn pthread_mutex_lock(lock: *mut pthread_mutex_t) -> c_int;
+                }
+
+                pthread_mutex_lock(lock)
+            }
+        };
+
+        #output
+        #main_function
+    ).into()
 }
 
 fn remove_mut(arg: &syn::FnArg) -> syn::FnArg {
