@@ -57,7 +57,7 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
     quote!(
         // this is both fine and normal and don't think too hard about it
         const _: fn() = || {
-            use ::skyline::libc::{pthread_mutex_t, c_int};
+            use ::skyline::libc::{pthread_mutex_t, pthread_key_t, c_int, c_void};
 
             // re-export pthread_mutex_lock as __pthread_mutex_lock
             //
@@ -71,6 +71,28 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
                 }
 
                 pthread_mutex_lock(lock)
+            }
+
+            #[export_name = "__pthread_key_create"]
+            pub unsafe extern "C" fn _skyline_internal_pthread_key_create_shim(key: *mut pthread_key_t, func: extern fn(*mut c_void)) -> c_int {
+                extern "C" {
+                    fn pthread_key_create(
+                        key: *mut pthread_key_t, func: extern fn(*mut c_void)
+                    ) -> c_int;
+                }
+
+                pthread_key_create(key, func)
+            }
+
+            #[export_name = "__pthread_key_delete"]
+            pub unsafe extern "C" fn _skyline_internal_pthread_key_delete_shim(key: pthread_key_t) -> c_int {
+                extern "C" {
+                    fn pthread_key_delete(
+                        key: pthread_key_t
+                    ) -> c_int;
+                }
+
+                pthread_key_delete(key)
             }
         };
 
