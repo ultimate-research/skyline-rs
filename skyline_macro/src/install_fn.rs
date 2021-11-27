@@ -4,6 +4,11 @@ use proc_macro2::Span;
 
 pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl ToTokens {
     let _install_fn = quote::format_ident!("{}_skyline_internal_install_hook", name);
+    let pointer_offset = attrs
+                    .pointer_offset
+                    .as_ref()
+                    .map(ToTokens::into_token_stream)
+                    .unwrap_or(quote! {0});
 
     let replace = attrs.replace
                     .as_ref()
@@ -44,7 +49,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
 
                 unsafe {
                     ::skyline::hooks::A64InlineHook(
-                        #replace as *const ::skyline::libc::c_void,
+                        ((#replace as *const u8).offset(#pointer_offset) as *const ::skyline::libc::c_void),
                         #name as *const ::skyline::libc::c_void,
                     )
                 }
@@ -59,7 +64,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
 
                 unsafe {
                     ::skyline::hooks::A64HookFunction(
-                        #replace as *const ::skyline::libc::c_void,
+                        ((#replace as *const u8).offset(#pointer_offset) as *const ::skyline::libc::c_void),
                         #name as *const ::skyline::libc::c_void,
                         &mut #orig as *mut *mut ::skyline::libc::c_void 
                     )
