@@ -5,6 +5,8 @@ use crate::hooks::{Region, getRegionAddress};
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
 
+static NOP: u32 = 0xd503201f;
+
 extern "C" {
     pub fn sky_memcpy(dst: *const c_void, src: *const c_void, size: size_t) -> SwitchResult;
 }
@@ -41,6 +43,52 @@ pub unsafe fn patch_data_from_text<T: Sized + Copy>(text_offset: *const u8, offs
     sky_memcpy(data_ptr as _, val as *const _ as _, core::mem::size_of::<T>()).ok()?;
 
     Ok(())
+}
+
+/// Replace the instruction at the given offset from the start of .text with NOP
+pub unsafe fn nop_data(
+    offset: usize,
+) -> Result<(), Error> {
+    patch_data(offset, &NOP)
+}
+
+/// Overwrite a value in read-only data with a passed value given a pointer plus offset
+pub unsafe fn patch_pointer_with_offset<T: Sized + Copy>(
+    pointer: *const u8,
+    offset: isize,
+    val: &T,
+) -> Result<(), Error> {
+    sky_memcpy(
+        pointer.offset(offset) as _,
+        val as *const _ as _,
+        core::mem::size_of::<T>(),
+    )
+        .ok()?;
+
+    Ok(())
+}
+
+/// Overwrite a value in read-only data with a passed value given a pointer
+pub unsafe fn patch_pointer<T: Sized + Copy>(
+    pointer: *const u8,
+    val: &T,
+) -> Result<(), Error> {
+    patch_pointer_with_offset(pointer, 0, val)
+}
+
+/// Replace the instruction at the given pointer with NOP
+pub unsafe fn nop_pointer(
+    pointer: *const u8,
+) -> Result<(), Error> {
+    patch_pointer(pointer as _, &NOP)
+}
+
+/// Replace the instruction at the given pointer plus offset with NOP
+pub unsafe fn nop_pointer_with_offset(
+    pointer: *const u8,
+    offset: isize
+) -> Result<(), Error> {
+    patch_pointer(pointer.offset(offset) as _, &NOP)
 }
 
 enum BranchType {
