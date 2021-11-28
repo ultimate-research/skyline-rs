@@ -12,6 +12,7 @@ mod kw {
     syn::custom_keyword!(name);
     syn::custom_keyword!(replace);
     syn::custom_keyword!(symbol);
+    syn::custom_keyword!(pointer_offset);
     syn::custom_keyword!(offset);
 }
 
@@ -47,14 +48,15 @@ impl ToTokens for MainAttrs {
 pub struct HookAttrs {
     pub replace: Option<syn::Path>,
     pub symbol: Option<syn::LitStr>,
+    pub pointer_offset: Option<syn::Expr>,
     pub offset: Option<syn::Expr>,
     pub inline: bool,
 }
 
 fn merge(attr1: HookAttrs, attr2: HookAttrs) -> HookAttrs {
     let (
-        HookAttrs { replace: r1, symbol: s1, offset: o1, inline: i1 },
-        HookAttrs { replace: r2, symbol: s2, offset: o2, inline: i2 },
+        HookAttrs { replace: r1, symbol: s1, pointer_offset: so1, offset: o1, inline: i1 },
+        HookAttrs { replace: r2, symbol: s2, pointer_offset: so2, offset: o2, inline: i2 },
     ) = (attr1, attr2);
 
 
@@ -62,6 +64,7 @@ fn merge(attr1: HookAttrs, attr2: HookAttrs) -> HookAttrs {
         replace: r1.or(r2),
         offset: o1.or(o2),
         symbol: s1.or(s2),
+        pointer_offset: so1.or(so2),
         inline: i1 || i2
     }
 }
@@ -80,6 +83,12 @@ impl Parse for HookAttrs {
             
             let mut a = HookAttrs::default();
             a.offset = Some(offset);
+            a
+        } else if look.peek(kw::pointer_offset) {
+            let MetaItem::<kw::pointer_offset, syn::Expr> { item: pointer_offset, .. } = input.parse()?;
+
+            let mut a = HookAttrs::default();
+            a.pointer_offset = Some(pointer_offset);
             a
         } else if look.peek(kw::replace) {
             let MetaItem::<kw::replace, syn::Path> { item: replace, .. } = input.parse()?;
