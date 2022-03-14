@@ -2,6 +2,8 @@
 #![allow(incomplete_features, stable_features)]
 #![feature(alloc_error_handler, lang_items, start, global_asm, const_generics, impl_trait_in_bindings, proc_macro_hygiene, alloc_prelude, panic_info_message, track_caller)]
 
+use std::str::Utf8Error;
+
 use libc::strlen;
 
 #[cfg(not(feature = "std"))]
@@ -65,6 +67,12 @@ pub unsafe fn from_c_str(c_str: *const u8) -> String {
         Ok(v) => v.to_owned(),
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
     }
+}
+
+/// Helper to convert a C-str to a Rust string, returning an error if it failed
+pub unsafe fn try_from_c_str(c_str: *const u8) -> Result<String, Utf8Error> {
+    let name_slice = core::slice::from_raw_parts(c_str as *mut _, strlen(c_str));
+    core::str::from_utf8(&name_slice).map(|string| string.to_owned())
 }
 
 /// A set of items that will likely be useful to import anyway
