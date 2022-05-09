@@ -1,7 +1,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(incomplete_features, stable_features)]
-#![feature(alloc_error_handler, lang_items, start, global_asm, const_generics, impl_trait_in_bindings, proc_macro_hygiene, alloc_prelude, panic_info_message, track_caller)]
+#![feature(
+    alloc_error_handler,
+    lang_items,
+    start,
+    global_asm,
+    const_generics,
+    impl_trait_in_bindings,
+    proc_macro_hygiene,
+    alloc_prelude,
+    panic_info_message,
+    track_caller
+)]
 
+#[cfg(feature = "std")]
 use std::str::Utf8Error;
 
 use libc::strlen;
@@ -69,6 +81,7 @@ pub unsafe fn from_c_str(c_str: *const u8) -> String {
     }
 }
 
+#[cfg(feature = "std")]
 /// Helper to convert a C-str to a Rust string, returning an error if it failed
 pub unsafe fn try_from_c_str(c_str: *const u8) -> Result<String, Utf8Error> {
     let name_slice = core::slice::from_raw_parts(c_str as *mut _, strlen(c_str));

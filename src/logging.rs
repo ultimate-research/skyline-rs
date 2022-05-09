@@ -1,16 +1,15 @@
-use core::fmt::Display;
+use crate::hooks::{getRegionAddress, Region};
+use crate::libc::{c_char, free, strlen};
 use core::fmt;
-use std::ffi::CStr;
-use crate::libc::{c_char, strlen, free};
-use crate::hooks::{ getRegionAddress, Region };
+use core::fmt::Display;
 use nnsdk::{
-    root::cxa_demangle,
+    diag::{GetBacktrace, GetSymbolName},
     ro::LookupSymbol,
-    diag::{
-        GetBacktrace,
-        GetSymbolName,
-    },
+    root::cxa_demangle,
 };
+
+#[cfg(feature = "std")]
+use std::ffi::CStr;
 
 extern "C" {
     fn skyline_tcp_send_raw(bytes: *const u8, usize: u64);
@@ -23,7 +22,8 @@ pub fn log(message: &str) {
 }
 
 /// Prints to the standard output, with a newline. For use in no_std plugins.
-#[macro_export] macro_rules! println {
+#[macro_export]
+macro_rules! println {
     () => {
         $crate::log();
     };
@@ -37,7 +37,7 @@ pub fn log(message: &str) {
     };
 }
 
-/**  
+/**
     Format wrapper used for displaying a [`Sized`] type to hex with 8 byte rows
 
     Example usage:
@@ -81,18 +81,13 @@ const NUMBERING_ASCII: &str = " 0123456789ABCDEF";
 
 #[cfg(not(feature = "std"))]
 const LOG2_TAB: [usize; 64] = [
-    63,  0, 58,  1, 59, 47, 53,  2,
-    60, 39, 48, 27, 54, 33, 42,  3,
-    61, 51, 37, 40, 49, 18, 28, 20,
-    55, 30, 34, 11, 43, 14, 22,  4,
-    62, 57, 46, 52, 38, 26, 32, 41,
-    50, 36, 17, 19, 29, 10, 13, 21,
-    56, 45, 25, 31, 35, 16,  9, 12,
-    44, 24, 15,  8, 23,  7,  6,  5
+    63, 0, 58, 1, 59, 47, 53, 2, 60, 39, 48, 27, 54, 33, 42, 3, 61, 51, 37, 40, 49, 18, 28, 20, 55,
+    30, 34, 11, 43, 14, 22, 4, 62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19, 29, 10, 13, 21, 56,
+    45, 25, 31, 35, 16, 9, 12, 44, 24, 15, 8, 23, 7, 6, 5,
 ];
 
 #[cfg(not(feature = "std"))]
-fn log2 (mut value: usize) -> f64 {
+fn log2(mut value: usize) -> f64 {
     value |= value >> 1;
     value |= value >> 2;
     value |= value >> 4;
@@ -103,7 +98,7 @@ fn log2 (mut value: usize) -> f64 {
 }
 
 #[cfg(feature = "std")]
-fn log2 (value: usize) -> f64 {
+fn log2(value: usize) -> f64 {
     (value as f64).log2()
 }
 
@@ -118,7 +113,12 @@ fn to_ascii_dots(x: u8) -> char {
     }
 }
 
-fn dump_hex_line(f: &mut fmt::Formatter, line: &[u8], addr: usize, highlight: &core::ops::Range<usize>) -> fmt::Result {
+fn dump_hex_line(
+    f: &mut fmt::Formatter,
+    line: &[u8],
+    addr: usize,
+    highlight: &core::ops::Range<usize>,
+) -> fmt::Result {
     write!(f, "{:08X}", addr)?;
     for (j, half) in line.chunks(8).enumerate() {
         write!(f, " ")?;
@@ -145,7 +145,12 @@ fn dump_hex_line(f: &mut fmt::Formatter, line: &[u8], addr: usize, highlight: &c
     writeln!(f)
 }
 
-fn hex_dump_bytes(f: &mut fmt::Formatter, byte_slice: &[u8], start: usize, highlight: core::ops::Range<usize>) -> fmt::Result {
+fn hex_dump_bytes(
+    f: &mut fmt::Formatter,
+    byte_slice: &[u8],
+    start: usize,
+    highlight: core::ops::Range<usize>,
+) -> fmt::Result {
     let num_spaces = hex_num_len(start.saturating_add(CHUNK_SIZE * 6)) + 1;
     for _ in 0..num_spaces {
         write!(f, " ")?;
@@ -163,7 +168,9 @@ fn hex_dump_bytes(f: &mut fmt::Formatter, byte_slice: &[u8], start: usize, highl
     }
     writeln!(f)?;
 
-    let lines = byte_slice.chunks(CHUNK_SIZE).zip((0..).map(|x| (x * CHUNK_SIZE) + start));
+    let lines = byte_slice
+        .chunks(CHUNK_SIZE)
+        .zip((0..).map(|x| (x * CHUNK_SIZE) + start));
 
     for (x, addr) in lines {
         dump_hex_line(f, x, addr, &highlight)?;
@@ -172,18 +179,18 @@ fn hex_dump_bytes(f: &mut fmt::Formatter, byte_slice: &[u8], start: usize, highl
     Ok(())
 }
 
-fn hex_dump<T>(f: &mut fmt::Formatter, addr: *const T, highlight: Option<core::ops::Range<usize>>) -> fmt::Result {
+fn hex_dump<T>(
+    f: &mut fmt::Formatter,
+    addr: *const T,
+    highlight: Option<core::ops::Range<usize>>,
+) -> fmt::Result {
     let addr = addr as usize;
     let highlight = highlight.unwrap_or(addr..addr + 1);
     let aligned_addr = addr & !0xF;
     let start = aligned_addr.saturating_sub(CHUNK_SIZE * 3);
     let num_chunks = 7 + ((highlight.end - highlight.start) / CHUNK_SIZE);
-    let byte_slice = unsafe { 
-        core::slice::from_raw_parts(
-            start as *const u8,
-            CHUNK_SIZE * num_chunks
-        )
-    };
+    let byte_slice =
+        unsafe { core::slice::from_raw_parts(start as *const u8, CHUNK_SIZE * num_chunks) };
 
     hex_dump_bytes(f, byte_slice, start, highlight)
 }
@@ -194,8 +201,9 @@ fn hex_dump_value<T: Sized>(f: &mut fmt::Formatter, val: &T) -> fmt::Result {
     hex_dump(f, val as *const _, Some(addr..addr + size))
 }
 
+#[cfg(feature = "std")]
 pub fn print_stack_trace() {
-    let addresses = &mut [0 as *const u8;32];
+    let addresses = &mut [0 as *const u8; 32];
     let addr_count = unsafe { GetBacktrace(addresses.as_mut_ptr(), 32) };
 
     for (idx, &addr) in addresses[0..addr_count].iter().enumerate() {
@@ -203,8 +211,8 @@ pub fn print_stack_trace() {
             continue;
         }
 
-        let name = &mut [0u8;255];
-        
+        let name = &mut [0u8; 255];
+
         unsafe { GetSymbolName(name.as_mut_ptr(), name.len() as u64, addr as u64) };
 
         let mut symbol_addr = 0;
@@ -216,12 +224,27 @@ pub fn print_stack_trace() {
         let c_name;
 
         if result == 0 {
-            c_name = unsafe { CStr::from_ptr(demangled_symbol as _).to_str().unwrap_or("None") };
+            c_name = unsafe {
+                CStr::from_ptr(demangled_symbol as _)
+                    .to_str()
+                    .unwrap_or("None")
+            };
         } else {
-            c_name = unsafe { CStr::from_ptr(name.as_ptr() as _).to_str().unwrap_or("None") };
+            c_name = unsafe {
+                CStr::from_ptr(name.as_ptr() as _)
+                    .to_str()
+                    .unwrap_or("None")
+            };
         }
 
-        println!("[{}] Address: {:x}, Symbol: {}+{:x}\n", idx, (symbol_addr as u64 - unsafe { getRegionAddress(Region::Text) as u64 } + 0x7100000000), c_name, addr as u64 - symbol_addr as u64);
+        println!(
+            "[{}] Address: {:x}, Symbol: {}+{:x}\n",
+            idx,
+            (symbol_addr as u64 - unsafe { getRegionAddress(Region::Text) as u64 } + 0x7100000000),
+            c_name,
+            addr as u64 - symbol_addr as u64
+        );
         unsafe { free(demangled_symbol as _) };
     }
 }
+

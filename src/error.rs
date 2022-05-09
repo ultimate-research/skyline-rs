@@ -6,6 +6,9 @@ use core::str;
 use crate::c_str;
 use crate::nn;
 
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
+
 #[non_exhaustive]
 pub enum Error {
     Os(OsError),
@@ -100,3 +103,4 @@ pub fn show_error(code: u32, message: &str, details: &str) {
         nn::err::ShowApplicationError(&error);
     };
 }
+

@@ -1,5 +1,6 @@
 use crate::hooks::{getRegionAddress, Region};
-use std::{iter::StepBy, ops::Range};
+
+use core::{iter::StepBy, ops::Range};
 
 pub struct TextIter<InnerIter: Iterator<Item = usize> + Sized> {
     inner: InnerIter,
