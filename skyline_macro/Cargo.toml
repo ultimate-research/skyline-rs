@@ -16,4 +16,5 @@ proc-macro2 = "1"
 lazy_static = "1.4"
 
 [features]
+std = []
 nso = []

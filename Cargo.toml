@@ -15,6 +15,6 @@ libc-nnsdk = { git = "https://github.com/ultimate-research/libc-nnsdk.git" }
 
 [features]
 default = ["std"]
-std = []
+std = ["skyline_macro/std"]
 nro_internal = []
 nso = ["skyline_macro/nso"]

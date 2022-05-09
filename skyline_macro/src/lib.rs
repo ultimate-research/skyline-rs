@@ -42,11 +42,42 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let mut output = TokenStream2::new();
 
     if cfg!(nro_header) {
-        quote!(
-            #attr_code
-            ::skyline::setup!();
-            ::std::nro_header!();
-        ).to_tokens(&mut output);
+        if cfg!(feature = "std") {
+            quote!(
+                #attr_code
+                ::skyline::setup!();
+                ::std::nro_header!();
+            ).to_tokens(&mut output);
+        } else {
+            quote!(
+                #attr_code
+                ::skyline::setup!();
+
+                global_asm!("
+                .section .nro_header
+                .global __nro_header_start
+                .word 0
+                .word _mod_header
+                .word 0
+                .word 0
+                .section .rodata.mod0
+                .global _mod_header
+                _mod_header:
+                    .ascii \"MOD0\"
+                    .word __dynamic_start - _mod_header
+                    .word __bss_start - _mod_header
+                    .word __bss_end - _mod_header
+                    .word __eh_frame_hdr_start - _mod_header
+                    .word __eh_frame_hdr_end - _mod_header
+                    .word __nx_module_runtime - _mod_header // runtime-generated module object offset
+                .global IS_NRO
+                IS_NRO:
+                    .word 1
+                .section .bss.module_runtime
+                .space 0xD0
+                ");
+            ).to_tokens(&mut output);
+        }
     } else {
         quote!(
             #attr_code
