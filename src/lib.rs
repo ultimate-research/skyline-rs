@@ -5,12 +5,13 @@
     lang_items,
     start,
     global_asm,
-    const_generics,
-    impl_trait_in_bindings,
     proc_macro_hygiene,
-    alloc_prelude,
     panic_info_message,
     track_caller
+)]
+#![cfg_attr(
+    not(skyline_std_v3),
+    feature(const_generics, impl_trait_in_bindings, alloc_prelude)
 )]
 
 #[cfg(feature = "std")]
@@ -95,6 +96,7 @@ pub unsafe fn try_from_c_str(c_str: *const u8) -> Result<String, Utf8Error> {
 /// use skyline::prelude::*;
 /// ```
 pub mod prelude {
+    #[cfg(not(skyline_std_v3))]
     pub use crate::alloc::prelude::v1::*;
     pub use crate::println;
     pub use alloc::format;
