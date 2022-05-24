@@ -174,7 +174,6 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
     // allow original!
     if !attrs.inline {
         let orig_stmt: Stmt = parse_quote! {
-            #[allow(unused_macros)]
             macro_rules! original {
                 () => {
                     {
@@ -195,7 +194,6 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
         };
         mod_fn.block.stmts.insert(0, orig_stmt);
         let orig_stmt: Stmt = parse_quote! {
-            #[allow(unused_macros)] 
             macro_rules! call_original {
                 ($($args:expr),* $(,)?) => {
                     original!()($($args),*)
