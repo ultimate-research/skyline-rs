@@ -80,7 +80,7 @@ pub unsafe fn nop_pointer_with_offset(
     patch_pointer(pointer.offset(offset) as _, &NOP)
 }
 
-/// A constructor to acquire a [`PatchBuilder`], which you can use the patch the game's memory.
+/// A constructor to acquire a [`PatchBuilder`], which you can use to patch the game's memory.
 /// 
 /// Example:
 ///
