@@ -129,6 +129,27 @@ impl Patch {
             .replace()
     }
 
+    /// Insert a ``b`` ARM instruction to jump to the destination offset.
+    /// The offset you provide must be relative to the base address provided to the constructor.
+    ///
+    /// Shortcut method for:
+    /// ```
+    /// BranchBuilder::branch().branch_offset().branch_to_offset().replace()
+    /// ```
+    ///
+    /// Example:
+    ///
+    /// ```
+    /// // Overwriting the instruction at offset 0x69420 with a branch in the .text section that redirects the Program Counter to address 0x420
+    /// Patch::in_text(0x69000).branch_to_relative(0x420);
+    /// ```
+    pub fn branch_to_relative(self, dest_offset: usize) {
+        BranchBuilder::branch()
+            .branch_offset(self.0)
+            .branch_to_offset(self.0 + dest_offset)
+            .replace()
+    }
+
     /// Insert a ``bl`` ARM instruction to jump to the destination offset.
     /// It is assumed that the offset you provided is relative to the Text region of the running executable
     ///
@@ -147,6 +168,27 @@ impl Patch {
         BranchBuilder::branch()
             .branch_offset(self.0)
             .branch_to_offset(dest_offset)
+            .replace()
+    }
+
+    /// Insert a ``bl`` ARM instruction to jump to the destination offset.
+    /// The offset you provide must be relative to the base address provided to the constructor.
+    ///
+    /// Shortcut method for:
+    /// ```
+    /// BranchBuilder::branch_link().branch_offset().branch_to_offset().replace
+    /// ```
+    ///
+    /// Example:
+    ///
+    /// ```
+    /// // Overwriting the instruction at offset 0x69420 with a branch link in the .text section that redirects the Program Counter to address 0x420
+    /// Patch::in_text(0x69000).branch_link_to_relative(0x420);
+    /// ```
+    pub fn branch_link_to_relative(self, dest_offset: usize) {
+        BranchBuilder::branch()
+            .branch_offset(self.0)
+            .branch_to_offset(self.0 + dest_offset)
             .replace()
     }
 
