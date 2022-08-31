@@ -141,7 +141,7 @@ impl Patch {
     ///
     /// ```
     /// // Overwriting the instruction at offset 0x69420 with a branch in the .text section that redirects the Program Counter to address 0x420
-    /// Patch::in_text(0x69000).branch_to(0x420);
+    /// Patch::in_text(0x69000).branch_to_relative(0x420);
     /// ```
     pub fn branch_to_relative(self, dest_offset: usize) {
         BranchBuilder::branch()
@@ -183,7 +183,7 @@ impl Patch {
     ///
     /// ```
     /// // Overwriting the instruction at offset 0x69420 with a branch link in the .text section that redirects the Program Counter to address 0x420
-    /// Patch::at_offset(0x69000).branch_link_to(0x420);
+    /// Patch::in_text(0x69000).branch_link_to_relative(0x420);
     /// ```
     pub fn branch_link_to_relative(self, dest_offset: usize) {
         BranchBuilder::branch()
