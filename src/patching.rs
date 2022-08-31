@@ -12,44 +12,33 @@ extern "C" {
 }
 
 /// Overwrite a string in read-only data with a Rust string given the offset from the start of .text
+#[doc(hidden)]
+#[deprecated(note = "Use Patch instead.")]
 pub unsafe fn patch_str(offset: usize, string: &str) -> Result<(), Error> {
-    let text_ptr = getRegionAddress(Region::Text) as *const u8;
-    let str_ptr = text_ptr.offset(offset as isize);
-
-    let len = strlen(str_ptr);
-
-    if len < string.len() {
-        return Err(Error::Skyline { kind: ErrorKind::StringTooLong })
-    }
-
-    let string = String::from(string) + "\0";
-    
-    sky_memcpy(str_ptr as _, string.as_ptr() as _, string.len()).ok()?;
-
-    Ok(())
+    Patch::in_text(offset).cstr(string)
 }
 
 /// Overwrite a value in read-only data with a passed value given an offset from the start of .text
+#[doc(hidden)]
+#[deprecated(note = "Use Patch instead.")]
 pub unsafe fn patch_data<T: Sized + Copy>(offset: usize, val: &T) -> Result<(), Error> {
-    let text_ptr = getRegionAddress(Region::Text) as *const u8;
-    patch_data_from_text(text_ptr, offset, val)
+    Patch::in_text(offset).data(val)
 }
 
 /// Overwrite a value in read-only data with a passed value given an offset from the start of .text
+#[doc(hidden)]
+#[deprecated(note = "Use Patch instead.")]
 pub unsafe fn patch_data_from_text<T: Sized + Copy>(text_offset: *const u8, offset: usize, val: &T) -> Result<(), Error> {
-    let text_ptr = text_offset;
-    let data_ptr = text_ptr.offset(offset as isize);
-
-    sky_memcpy(data_ptr as _, val as *const _ as _, core::mem::size_of::<T>()).ok()?;
-
-    Ok(())
+    Patch::in_text(offset).data(val)
 }
 
 /// Replace the instruction at the given offset from the start of .text with NOP
+#[doc(hidden)]
+#[deprecated(note = "Use Patch instead.")]
 pub unsafe fn nop_data(
     offset: usize,
 ) -> Result<(), Error> {
-    patch_data(offset, &NOP)
+    Patch::in_text(offset).nop()
 }
 
 /// Overwrite a value in read-only data with a passed value given a pointer plus offset
@@ -89,6 +78,238 @@ pub unsafe fn nop_pointer_with_offset(
     offset: isize
 ) -> Result<(), Error> {
     patch_pointer(pointer.offset(offset) as _, &NOP)
+}
+
+/// A constructor to acquire a [`PatchBuilder`], which you can use to patch the game's memory.
+/// 
+/// Example:
+///
+/// ```
+/// // Replace the instruction at `main` + 0x14a8504 with a branch
+/// // to `main` + 0x14a853C
+/// let text_builder: PatchBuilder = Patch::in_text(0x69),
+/// ```
+pub struct Patch(usize);
+
+impl Patch {
+    fn compute_address(offset: usize, region: Region) -> usize {
+        unsafe {
+            (getRegionAddress(region) as *const u8).offset(offset as isize) as usize
+        }
+    }
+
+    /// Provide the base offset to work with for methods.
+    /// This offset will be treated as absolute.
+    /// 
+    /// If you would like to work relative to a region, prefer using the other methods like [Patch::in_text](Patch#in_text).
+    /// 
+    /// Some methods, such as [branch_to](Patch#branch_to), will assume a Region for you.
+    /// 
+    /// Example:
+    /// 
+    /// ```
+    /// // In this context, branch_to will overwrite the instruction at offset 0x69
+    /// // Since branch_to assumes that you are working using Region::Text, your offset will be turned into .text+offset.
+    /// Patch::at_offset(0x69).branch_to(0x420);
+    /// ```
+    pub fn at_offset(offset: usize) -> Self {
+        Self(offset)
+    }
+
+    /// Insert a ``b`` ARM instruction to jump to the destination offset.
+    /// It is assumed that the offset you provided is relative to the Text region of the running executable
+    /// 
+    /// Shortcut method for:
+    /// ```
+    /// BranchBuilder::branch().branch_offset().branch_to_offset().replace()
+    /// ```
+    /// 
+    /// Example:
+    /// 
+    /// ```
+    /// // Overwriting the instruction at offset 0x69 with a branch in the .text section that redirects the Program Counter to address 0x420
+    /// Patch::at_offset(0x69).branch_to(0x420);
+    /// ```
+    pub fn branch_to(self, dest_offset: usize) {
+        BranchBuilder::branch().branch_offset(self.0).branch_to_offset(dest_offset).replace()
+    }
+
+    /// Insert a ``bl`` ARM instruction to jump to the destination offset.
+    /// It is assumed that the offset you provided is relative to the Text region of the running executable
+    /// 
+    /// Shortcut method for:
+    /// ```
+    /// BranchBuilder::branch_link().branch_offset().branch_to_offset().replace
+    /// ```
+    /// 
+    /// Example:
+    /// 
+    /// ```
+    /// // Overwriting the instruction at offset 0x69 with a branch link in the .text section that redirects the Program Counter to address 0x420
+    /// Patch::at_offset(0x69).branch_link_to(0x420);
+    /// ```
+    pub fn branch_link_to(self, dest_offset: usize) {
+        BranchBuilder::branch().branch_offset(self.0).branch_to_offset(dest_offset).replace()
+    }
+
+    /// Use the base offset provided to [at_offset](Patch#at_offset) to get an address for a section of the executable.
+    /// 
+    /// It is preferable that you use the shortcut methods for conciseness.
+    /// 
+    /// Example:
+    /// 
+    /// ```
+    /// // In this context, branch_to will overwrite the instruction at offset 0x69
+    /// let builder: PatchBuilder = Patch::at_offset(0x69).in_section(Region::Text);
+    /// ```
+    pub fn in_section(self, region: Region) -> PatchBuilder {
+        PatchBuilder(Self::compute_address(self.0, region))
+    }
+
+    /// Provide a PatchBuilder targeting the .text section
+    /// 
+    /// Shortcut method for:
+    /// ```
+    /// PatchBuilder::at_offset(offset).in_section(Region::Text)
+    /// ```
+    /// 
+    /// Example:
+    /// ```
+    /// let builder: PatchBuilder = Patch::in_text(offset);
+    /// ```
+    pub fn in_text(offset: usize) -> PatchBuilder {
+        PatchBuilder(Self::compute_address(offset, Region::Text))
+    }
+
+    /// Provide a PatchBuilder targeting the .data section
+    /// 
+    /// Shortcut method for:
+    /// ```
+    /// PatchBuilder::at_offset(offset).in_section(Region::Data)
+    /// ```
+    /// 
+    /// Example:
+    /// ```
+    /// let builder: PatchBuilder = Patch::in_data(offset);
+    /// ```
+    pub fn in_data(offset: usize) -> PatchBuilder {
+        PatchBuilder(Self::compute_address(offset, Region::Data))
+
+    }
+
+    /// Provide a PatchBuilder targeting the .rodata section
+    /// 
+    /// Shortcut method for:
+    /// ```
+    /// PatchBuilder::at_offset(offset).in_section(Region::Rodata)
+    /// ```
+    /// 
+    /// Example:
+    /// ```
+    /// let builder: PatchBuilder = Patch::in_rodata(offset);
+    /// ```
+    pub fn in_rodata(offset: usize) -> PatchBuilder {
+        PatchBuilder(Self::compute_address(offset, Region::Rodata))
+
+    }
+
+    /// Provide a PatchBuilder targeting the .bss section
+    /// 
+    /// Shortcut method for:
+    /// ```
+    /// PatchBuilder::at_offset(offset).in_section(Region::Bss)
+    /// ```
+    /// 
+    /// Example:
+    /// ```
+    /// let builder: PatchBuilder = Patch::in_bss(offset);
+    /// ```
+    pub fn in_bss(offset: usize) -> PatchBuilder {
+        PatchBuilder(Self::compute_address(offset, Region::Bss))
+
+    }
+
+    /// Provide a PatchBuilder targeting the heap
+    /// 
+    /// Shortcut method for:
+    /// ```
+    /// PatchBuilder::at_offset(offset).in_section(Region::Heap)
+    /// ```
+    /// 
+    /// Example:
+    /// ```
+    /// let builder: PatchBuilder = Patch::in_heap(offset);
+    /// ```
+    pub fn in_heap(offset: usize) -> PatchBuilder {
+        PatchBuilder(Self::compute_address(offset, Region::Heap))
+    }
+}
+
+
+
+/// A builder which you can use the patch the game's memory.
+///
+/// Example:
+///
+/// ```
+/// // Replace the instruction at `main` + 0x69 with a NOP instruction
+/// Patch::in_text(0x69).nop().unwrap()
+/// ```
+pub struct PatchBuilder(usize);
+
+impl PatchBuilder {
+    /// Overwrites data at the provided offset with the provided value.
+    /// Equivalent to memcpy
+    pub fn data<T: Sized + Copy>(self, val: T) -> Result<(), Error> {
+        unsafe { sky_memcpy(self.0 as _, &val as *const _ as _, core::mem::size_of::<T>()).ok()? };
+        Ok(())
+    }
+
+    /// Overwrites data at the provided offset with the content of a slice.
+    /// 
+    /// # Example:
+    /// ```
+    /// // An array of four u8
+    /// Patch::at_data(0x69).bytes(b"Ferris").unwrap();
+    /// 
+    /// // A &str (with no null-terminator)
+    /// let a_string = String::from("Ferris");
+    /// Patch::in_data(0x69).bytes(&a_string).unwrap();
+    /// 
+    /// // A &[u8] slice
+    /// let log_wide = &[0xef, 0xbc, 0xac, 0xef, 0xbd, 0x8f, 0xef, 0xbd, 0x87,  0x00, 0x00];
+    /// Patch::in_data(0x69).bytes(log_wide).unwrap();
+    /// ```
+    pub fn bytes<B: AsRef<[u8]>>(self, val: B) -> Result<(), Error> {
+        let slice = val.as_ref();
+        unsafe { sky_memcpy(self.0 as _, slice.as_ptr() as *const _ as _, slice.len()).ok()? };
+
+        Ok(())
+    }
+
+    /// Overwrites data at the provided offset with a C string.
+    /// The null-terminator is appended for you.
+    /// 
+    /// If you do not wish for the null-terminator to be added, use [bytes](PatchBuilder#bytes) instead.
+    /// 
+    /// Example:
+    /// ```
+    /// Patch::at_data(0x69).cstr("Ferris").unwrap();
+    /// ```
+    pub fn cstr(self, string: &str) -> Result<(), Error> {
+        let string = String::from(string) + "\0";
+        self.bytes(&string)
+    }
+
+    /// Overwrites bytes at the provided offset with a NOP instruction.
+    /// 
+    /// Example:
+    /// ```
+    /// Patch::at_text(0x69).nop().unwrap();
+    /// ```
+    pub fn nop(self) -> Result<(), Error> {
+        self.data(NOP)
+    }
 }
 
 enum BranchType {
@@ -209,10 +430,8 @@ impl BranchBuilder {
 
         let instr: u64 = (instr_magic | imm26) as u64;
 
-        unsafe {
-            if let Err(err) = patch_data(offset, &instr) {
-                panic!("Failed to patch data, error: {:?}", err)
-            }
+        if let Err(err) = Patch::in_text(offset).data(instr) {
+            panic!("Failed to patch data, error: {:?}", err)
         }
     }
 }
