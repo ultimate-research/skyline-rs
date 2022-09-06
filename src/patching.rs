@@ -312,7 +312,7 @@ impl PatchBuilder {
     /// # Example:
     /// ```
     /// // An array of four u8
-    /// Patch::at_data(0x69).bytes(b"Ferris").unwrap();
+    /// Patch::in_data(0x69).bytes(b"Ferris").unwrap();
     ///
     /// // A &str (with no null-terminator)
     /// let a_string = String::from("Ferris");
@@ -336,7 +336,7 @@ impl PatchBuilder {
     ///
     /// Example:
     /// ```
-    /// Patch::at_data(0x69).cstr("Ferris").unwrap();
+    /// Patch::in_data(0x69).cstr("Ferris").unwrap();
     /// ```
     pub fn cstr(self, string: &str) -> Result<(), Error> {
         let string = String::from(string) + "\0";
@@ -347,7 +347,7 @@ impl PatchBuilder {
     ///
     /// Example:
     /// ```
-    /// Patch::at_text(0x69).nop().unwrap();
+    /// Patch::in_text(0x69).nop().unwrap();
     /// ```
     pub fn nop(self) -> Result<(), Error> {
         self.data(NOP)
