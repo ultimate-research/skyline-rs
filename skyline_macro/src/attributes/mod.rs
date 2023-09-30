@@ -4,7 +4,7 @@ use syn::parse::{Parse, ParseStream};
 use syn::{parenthesized, token, Token};
 
 pub struct MainAttrs {
-    name: String,
+    pub name: String,
 }
 
 mod kw {
@@ -22,15 +22,15 @@ impl Parse for MainAttrs {
             let meta: syn::MetaNameValue = input.parse()?;
 
             match meta.lit {
-                syn::Lit::Str(string) => {
-                    Ok(MainAttrs {
-                        name: string.value()
-                    })
-                }
-                _ => panic!("Invalid literal, must be a string")
+                syn::Lit::Str(string) => Ok(MainAttrs {
+                    name: string.value(),
+                }),
+                _ => panic!("Invalid literal, must be a string"),
             }
         } else {
-            Ok(MainAttrs { name: "skyline_rust_plugin".into() })
+            Ok(MainAttrs {
+                name: "skyline_rust_plugin".into(),
+            })
         }
     }
 }
@@ -40,7 +40,8 @@ impl ToTokens for MainAttrs {
         let name = &self.name[..];
         quote::quote!(
             ::skyline::set_module_name!(#name);
-        ).to_tokens(tokens);
+        )
+        .to_tokens(tokens);
     }
 }
 
@@ -55,17 +56,28 @@ pub struct HookAttrs {
 
 fn merge(attr1: HookAttrs, attr2: HookAttrs) -> HookAttrs {
     let (
-        HookAttrs { replace: r1, symbol: s1, pointer_offset: so1, offset: o1, inline: i1 },
-        HookAttrs { replace: r2, symbol: s2, pointer_offset: so2, offset: o2, inline: i2 },
+        HookAttrs {
+            replace: r1,
+            symbol: s1,
+            pointer_offset: so1,
+            offset: o1,
+            inline: i1,
+        },
+        HookAttrs {
+            replace: r2,
+            symbol: s2,
+            pointer_offset: so2,
+            offset: o2,
+            inline: i2,
+        },
     ) = (attr1, attr2);
-
 
     HookAttrs {
         replace: r1.or(r2),
         offset: o1.or(o2),
         symbol: s1.or(s2),
         pointer_offset: so1.or(so2),
-        inline: i1 || i2
+        inline: i1 || i2,
     }
 }
 
@@ -74,25 +86,28 @@ impl Parse for HookAttrs {
         let look = input.lookahead1();
         let attr = if look.peek(kw::symbol) {
             let MetaItem::<kw::symbol, syn::LitStr> { item: string, .. } = input.parse()?;
-            
+
             let mut a = HookAttrs::default();
             a.symbol = Some(string);
             a
         } else if look.peek(kw::offset) {
             let MetaItem::<kw::offset, syn::Expr> { item: offset, .. } = input.parse()?;
-            
+
             let mut a = HookAttrs::default();
             a.offset = Some(offset);
             a
         } else if look.peek(kw::pointer_offset) {
-            let MetaItem::<kw::pointer_offset, syn::Expr> { item: pointer_offset, .. } = input.parse()?;
+            let MetaItem::<kw::pointer_offset, syn::Expr> {
+                item: pointer_offset,
+                ..
+            } = input.parse()?;
 
             let mut a = HookAttrs::default();
             a.pointer_offset = Some(pointer_offset);
             a
         } else if look.peek(kw::replace) {
             let MetaItem::<kw::replace, syn::Path> { item: replace, .. } = input.parse()?;
-            
+
             let mut a = HookAttrs::default();
             a.replace = Some(replace);
             a
@@ -136,10 +151,6 @@ impl<Keyword: Parse, Item: Parse> Parse for MetaItem<Keyword, Item> {
             input.parse()?
         };
 
-        Ok(Self {
-            ident,
-            item
-        })
+        Ok(Self { ident, item })
     }
 }
-
