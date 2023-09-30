@@ -35,7 +35,7 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
         .section .rodata.mod0
         .global _mod_header
         _mod_header:
-            .ascii \"MOD0\"
+            .ascii "MOD0"
             .word __dynamic_start - _mod_header
             .word __bss_start - _mod_header
             .word __bss_end - _mod_header
@@ -75,7 +75,7 @@ pub fn main(attrs: TokenStream, item: TokenStream) -> TokenStream {
     quote! {
         #attr_code
         ::skyline::setup!();
-        global_asm!(#asm);
+        ::std::arch::global_asm!(#asm);
     }.to_tokens(&mut output);
 
     quote!(
