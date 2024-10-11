@@ -63,6 +63,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
                 }
 
                 unsafe {
+                    #[allow(static_mut_refs)]
                     ::skyline::hooks::A64HookFunction(
                         ((#replace as *const u8).offset(#pointer_offset) as *const ::skyline::libc::c_void),
                         #name as *const ::skyline::libc::c_void,
