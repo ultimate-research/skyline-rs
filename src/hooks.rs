@@ -29,7 +29,9 @@ pub enum Region {
 
 #[repr(C)]
 pub struct InlineCtx {
-    pub registers: [nn::os::CpuRegister; 29],
+    pub registers: [nn::os::CpuRegister; 31],
+    pub sp: nn::os::CpuRegister,
+    pub registers_f: [nn::os::FpuRegister; 32],
 }
 
 impl fmt::Display for InlineCtx {
@@ -37,6 +39,11 @@ impl fmt::Display for InlineCtx {
         for (i, reg) in self.registers.iter().enumerate() {
             unsafe {
                 write!(f, "X[{}]: {:#08x?}\n", i, reg.x.as_ref())?;
+            }
+        }
+        for (i, reg) in self.registers_f.iter().enumerate() {
+            unsafe {
+                write!(f, "D[{}]: {:#08x?}\n", i, reg.d())?;
             }
         }
         Ok(())
