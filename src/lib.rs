@@ -3,7 +3,6 @@
 #![feature(
     alloc_error_handler,
     lang_items,
-    start,
     global_asm,
     proc_macro_hygiene,
     panic_info_message,
