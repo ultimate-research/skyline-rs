@@ -174,9 +174,11 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
                         // Hacky solution to allow `unused_unsafe` to be applied to an expression
                         #[allow(unused_unsafe)]
                         if true {
+                            let temp = #_orig_fn.get().unwrap();
+
                             unsafe {
                                 core::mem::transmute::<*const (), extern "C" fn(#(#args_tokens),*) #return_tokens>(
-                                    #_orig_fn as *const()
+                                    *temp as *const u64 as *const()
                                 ) 
                             } 
                         } else {
@@ -209,7 +211,7 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
             #install_fn
             
             #[allow(non_upper_case_globals)]
-            pub static mut #_orig_fn: *mut ::skyline::libc::c_void = 0 as *mut ::skyline::libc::c_void;
+            pub static #_orig_fn: ::std::sync::OnceLock<u64> = ::std::sync::OnceLock::new();
         ).to_tokens(&mut output);
     }
 

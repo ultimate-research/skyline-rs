@@ -133,6 +133,7 @@ impl Parse for HookAttrs {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct MetaItem<Keyword: Parse, Item: Parse> {
     pub ident: Keyword,
