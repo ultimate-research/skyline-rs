@@ -175,7 +175,7 @@ pub fn hook(attrs: TokenStream, input: TokenStream) -> TokenStream {
                         #[allow(unused_unsafe)]
                         if true {
                             unsafe {
-                                core::mem::transmute::<_, extern "C" fn(#(#args_tokens),*) #return_tokens>(
+                                core::mem::transmute::<*const (), extern "C" fn(#(#args_tokens),*) #return_tokens>(
                                     #_orig_fn as *const()
                                 ) 
                             } 
