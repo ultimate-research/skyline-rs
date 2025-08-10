@@ -42,6 +42,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
 
                 assert_inline_ctx(#name);
             };
+            #[allow(non_snake_case)]
             pub fn #_install_fn() {
                 if (::skyline::hooks::A64InlineHook as *const ()).is_null() {
                     panic!("A64InlineHook is null");
@@ -57,6 +58,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
         }
     } else {
         quote!{
+            #[allow(non_snake_case)]
             pub fn #_install_fn() {
                 if (::skyline::hooks::A64HookFunction as *const ()).is_null() {
                     panic!("A64HookFunction is null");
