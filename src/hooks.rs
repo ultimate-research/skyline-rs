@@ -42,9 +42,7 @@ impl fmt::Display for InlineCtx {
             }
         }
         for (i, reg) in self.registers_f.iter().enumerate() {
-            unsafe {
-                write!(f, "D[{}]: {:#08x?}\n", i, reg.d())?;
-            }
+            write!(f, "D[{}]: {:#08x?}\n", i, reg.d())?;
         }
         Ok(())
     }

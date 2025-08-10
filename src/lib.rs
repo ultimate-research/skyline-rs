@@ -2,7 +2,6 @@
 #![allow(incomplete_features, stable_features)]
 #![feature(
     alloc_error_handler,
-    lang_items,
     global_asm,
     proc_macro_hygiene,
     panic_info_message,

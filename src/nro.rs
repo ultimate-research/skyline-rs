@@ -17,26 +17,15 @@ extern "C" {
 ///
 /// **Note:** Requires the NRO hook plugin. Will return an error otherwise.
 pub fn add_hook(callback: Callback) -> Result<(), NroHookPluginMissing> {
-    if (add_nro_load_hook as *const ()).is_null() {
-        Err(NroHookPluginMissing)
-    } else {
-        unsafe {
-            add_nro_load_hook(callback);
-        }
+    // Removed the null check on the function because function pointers are not nullable. Should probably get them through the nnsdk symbol resolver for this purpose.
+        unsafe { add_nro_load_hook(callback); }
         Ok(())
-    }
 
 }
 
 pub fn add_unload_hook(callback: Callback) -> Result<(), NroHookPluginMissing> {
-    if (add_nro_unload_hook as *const ()).is_null() {
-        Err(NroHookPluginMissing)
-    } else {
-        unsafe {
-            add_nro_unload_hook(callback);
-        }
-        Ok(())
-    }
+    unsafe { add_nro_unload_hook(callback); }
+    Ok(())
 }
 
 /// A struct to hold information related to the NRO being loaded

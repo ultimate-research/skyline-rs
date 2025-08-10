@@ -42,6 +42,7 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
 
                 assert_inline_ctx(#name);
             };
+            #[allow(non_snake_case)]
             pub fn #_install_fn() {
                 if (::skyline::hooks::A64InlineHook as *const ()).is_null() {
                     panic!("A64InlineHook is null");
@@ -57,18 +58,22 @@ pub fn generate(name: &syn::Ident, orig: &syn::Ident, attrs: &HookAttrs) -> impl
         }
     } else {
         quote!{
+            #[allow(non_snake_case)]
             pub fn #_install_fn() {
                 if (::skyline::hooks::A64HookFunction as *const ()).is_null() {
                     panic!("A64HookFunction is null");
                 }
 
                 unsafe {
+                    let mut temp = 0 as u64;
                     #[allow(static_mut_refs)]
                     ::skyline::hooks::A64HookFunction(
                         ((#replace as *const u8).offset(#pointer_offset) as *const ::skyline::libc::c_void),
                         #name as *const ::skyline::libc::c_void,
-                        &mut #orig as *mut *mut ::skyline::libc::c_void 
-                    )
+                        &mut temp as *mut u64 as *mut *mut ::skyline::libc::c_void 
+                    );
+
+                    #orig.set(temp).unwrap();
                 }
             }
         }
