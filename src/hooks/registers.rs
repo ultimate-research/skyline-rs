@@ -177,7 +177,7 @@ impl FpuRegister {
     /// Transforms the view of this register into a [`VectorRegister`] view.
     pub fn as_vec_mut(&mut self) -> &mut VectorRegister {
         unsafe {
-            std::mem::transmute(self)
+            core::mem::transmute(self)
         }
     }
 
