@@ -1,6 +1,8 @@
 use crate::alloc::string::String;
 use core::fmt;
-use nnsdk::root::nn;
+
+mod registers;
+pub use registers::*;
 
 #[macro_export]
 macro_rules! install_hooks {
@@ -29,17 +31,15 @@ pub enum Region {
 
 #[repr(C)]
 pub struct InlineCtx {
-    pub registers: [nn::os::CpuRegister; 31],
-    pub sp: nn::os::CpuRegister,
-    pub registers_f: [nn::os::FpuRegister; 32],
+    pub registers: [CpuRegister; 31],
+    pub sp: CpuRegister,
+    pub registers_f: [FpuRegister; 32],
 }
 
 impl fmt::Display for InlineCtx {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, reg) in self.registers.iter().enumerate() {
-            unsafe {
-                write!(f, "X[{}]: {:#08x?}\n", i, reg.x.as_ref())?;
-            }
+            write!(f, "X[{}]: {:#08x?}\n", i, reg.x())?;
         }
         for (i, reg) in self.registers_f.iter().enumerate() {
             write!(f, "D[{}]: {:#08x?}\n", i, reg.d())?;
