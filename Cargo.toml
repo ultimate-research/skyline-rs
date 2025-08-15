@@ -1,6 +1,6 @@
 [package]
 name = "skyline"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["jam1garner <jam1.mcleod@hotmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -9,7 +9,7 @@ description = "A library for helping patch and modify Nintendo Switch games"
 readme = "README.md"
 
 [dependencies]
-skyline_macro = { path = "./skyline_macro", version = "0.2.0" }
+skyline_macro = { path = "./skyline_macro", version = "0.2.1" }
 nnsdk = "0.5.0"
 libc-nnsdk = "0.4.0"
 
