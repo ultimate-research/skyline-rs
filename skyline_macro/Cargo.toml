@@ -1,6 +1,6 @@
 [package]
 name = "skyline_macro"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["jam1garner <jam1.mcleod@hotmail.com>"]
 edition = "2018"
 license = "MIT"
